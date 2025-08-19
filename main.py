@@ -3,3 +3,5 @@ print("xie xie")
 print("mish")
 print("uwu")
 print("kawaii")
+
+#soy god
