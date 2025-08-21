@@ -9,5 +9,10 @@ print("kawaii")
 print("holi")
 print("anyonjaseio")
 #ola ola
-#creo que ya se arreglo   
+
+#creo que ya se arreglo  
+print("hi")
+
 print("hola")
+
+#aaaaa
