@@ -18,8 +18,7 @@ class CrossSudokuGA:
         # Inicializar con el puzzle de la imagen
         self.inicializar_puzzle_desde_imagen()
 
-        def inicializar_puzzle_desde_imagen(self):
-    """Inicializa el puzzle basado en la imagen proporcionada"""
+def inicializar_puzzle_desde_imagen(self):
     
     # Grid central (completamente lleno en la imagen)
     self.grids['center'] = np.array([
