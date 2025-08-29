@@ -1262,6 +1262,91 @@
         let showingCandidates = false;
 
         const sudokuEngine = new SudokuEngine();
+<!-- Solo el código JavaScript necesario para restaurar el sistema de ayuda -->
+
+// ==================== SISTEMA DE AYUDA CONTEXTUAL ====================
+const helpContent = {
+    'classic': `
+        <h3>Reglas del Sudoku Clásico</h3>
+        <p>El objetivo es rellenar una cuadrícula de 9×9 con dígitos del 1 al 9 de modo que:</p>
+        <ul>
+            <li>Cada fila contenga todos los números del 1 al 9 sin repetir</li>
+            <li>Cada columna contenga todos los números del 1 al 9 sin repetir</li>
+            <li>Cada subcuadrícula 3×3 contenga todos los números del 1 al 9 sin repetir</li>
+        </ul>
+    `,
+    
+    'killer': `
+        <h3>Reglas del Killer Sudoku</h3>
+        <p>Además de las reglas del Sudoku clásico:</p>
+        <ul>
+            <li>Las celdas sombreadas forman "jaulas" con un número indicado (suma total)</li>
+            <li>Los números dentro de cada jaula deben sumar exactamente el valor mostrado</li>
+            <li>Los números dentro de una jaula no pueden repetirse</li>
+        </ul>
+    `,
+    
+    'samurai': `
+        <h3>Reglas del Samurai Sudoku</h3>
+        <p>Consiste en 5 sudokus interconectados:</p>
+        <ul>
+            <li>4 sudokus en las esquinas y 1 en el centro que se superpone con los otros</li>
+            <li>Cada sudoku individual debe seguir las reglas clásicas</li>
+            <li>Las áreas superpuestas deben satisfacer las reglas de ambos sudokus</li>
+        </ul>
+    `,
+    
+    'jigsaw': `
+        <h3>Reglas del Jigsaw Sudoku</h3>
+        <p>Variante con regiones de forma irregular:</p>
+        <ul>
+            <li>Las regiones no son cuadrados 3×3 tradicionales</li>
+            <li>Cada región debe contener todos los números del 1 al 9 sin repetir</li>
+            <li>Se mantienen las reglas de filas y columnas del Sudoku clásico</li>
+        </ul>
+    `,
+    
+    'x-sudoku': `
+        <h3>Reglas del X-Sudoku</h3>
+        <p>Sudoku clásico con regla adicional:</p>
+        <ul>
+            <li>Las dos diagonales principales deben contener todos los números del 1 al 9</li>
+            <li>Se mantienen todas las reglas del Sudoku clásico</li>
+            <li>Las diagonales son restricciones adicionales, no reemplazan otras reglas</li>
+        </ul>
+    `,
+    
+    'mini': `
+        <h3>Reglas del Mini Sudoku</h3>
+        <p>Versiones más pequeñas para principiantes:</p>
+        <ul>
+            <li><strong>4×4:</strong> Números del 1 al 4, regiones 2×2</li>
+            <li><strong>6×6:</strong> Números del 1 al 6, regiones 2×3 o 3×2</li>
+            <li>Mismas reglas que el Sudoku clásico pero con menos casillas</li>
+        </ul>
+    `
+};
+
+function showHelpModal() {
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    
+    const titles = {
+        'classic': 'Sudoku Clásico',
+        'killer': 'Killer Sudoku', 
+        'samurai': 'Samurai Sudoku',
+        'jigsaw': 'Jigsaw Sudoku',
+        'x-sudoku': 'X-Sudoku',
+        'mini': 'Mini Sudoku'
+    };
+    
+    modalTitle.textContent = `Cómo Jugar al ${titles[currentGameType]}`;
+    modalContent.innerHTML = helpContent[currentGameType];
+    document.getElementById('helpModal').style.display = 'flex';
+}
+
+// Agregar este event listener en la función setupEventListeners()
+document.getElementById('btnHelp').addEventListener('click', showHelpModal);
 
         function initializeGame() {
             showMainPage();
