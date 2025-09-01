@@ -86,32 +86,42 @@ class SudokuGeneticSolver {
     }
 
     // Función de fitness mejorada
-    calculateFitness(individual) {
-        let fitness = 1000; // Fitness base
-        
-        // Penalizar duplicados en filas
-        for (let i = 0; i < this.size; i++) {
-            const rowSet = new Set();
-            for (let j = 0; j < this.size; j++) {
-                rowSet.add(individual[i][j]);
-            }
-            fitness -= (this.size - rowSet.size) * 10;
-        }
-        
-        // Penalizar duplicados en columnas
+calculateFitness(individual) {
+    let fitness = 1000; // Fitness base
+    
+    // Penalizar duplicados en filas
+    for (let i = 0; i < this.size; i++) {
+        const rowSet = new Set();
         for (let j = 0; j < this.size; j++) {
-            const colSet = new Set();
-            for (let i = 0; i < this.size; i++) {
-                colSet.add(individual[i][j]);
-            }
-            fitness -= (this.size - colSet.size) * 10;
+            rowSet.add(individual[i][j]);
         }
-        
-        // Bonificación por subcuadrículas válidas (ya lo son por construcción)
-        fitness += 50;
-        
-        return fitness;
+        fitness -= (this.size - rowSet.size) * 10;
     }
+    
+    // Penalizar duplicados en columnas
+    for (let j = 0; j < this.size; j++) {
+        const colSet = new Set();
+        for (let i = 0; i < this.size; i++) {
+            colSet.add(individual[i][j]);
+        }
+        fitness -= (this.size - colSet.size) * 10;
+    }
+    
+    // Penalizar duplicados en subcuadrículas 3x3
+    for (let i = 0; i < this.size; i += 3) {
+        for (let j = 0; j < this.size; j += 3) {
+            const subgridSet = new Set();
+            for (let x = i; x < i + 3; x++) {
+                for (let y = j; y < j + 3; y++) {
+                    subgridSet.add(individual[x][y]);
+                }
+            }
+            fitness -= (this.size - subgridSet.size) * 10;
+        }
+    }
+    
+    return Math.max(0, fitness); // Asegurar fitness no negativo
+}
 
     // Selección por ruleta (más efectiva)
     rouletteSelection() {

@@ -1,123 +1,156 @@
 class SudokuEngine {
-    // ... (código anterior保持不变) ...
-
-    async solveWithGeneticAlgorithm(sudokuGrid) {
-        try {
-            this.showGeneticMonitor();
-            this.fitnessHistory = [];
-            
-            const matrix = this.gridToMatrix(sudokuGrid);
-            
-            // Verificar que el sudoku tenga solución
-            if (!this.isValidPuzzle(matrix)) {
-                alert('❌ El sudoku no es válido o no tiene solución');
-                this.hideGeneticMonitor();
-                return false;
-            }
-            
-            this.solver = new SudokuGeneticSolver(matrix);
-            
-            this.solver.onGeneration = (data) => {
-                this.updateGeneticMonitor(data);
-            };
-
-            const solution = await this.solver.solve();
-            
-            if (solution && this.isPerfectSolution(solution)) {
-                this.matrixToGrid(solution, sudokuGrid);
-                this.hideGeneticMonitor();
-                return true;
-            } else {
-                this.hideGeneticMonitor();
-                alert('⚠️ No se encontró solución perfecta. Mostrando mejor intento...');
-                if (solution) {
-                    this.matrixToGrid(solution, sudokuGrid);
-                }
-                return false;
-            }
-            
-        } catch (error) {
-            console.error('Error en algoritmo genético:', error);
-            this.hideGeneticMonitor();
-            alert('❌ Error en el algoritmo genético: ' + error.message);
-            return false;
-        }
+    constructor() {
+        this.knowledgeBase = new SudokuKnowledgeBase();
+        this.generator = new SudokuGenerator();
+        // ... resto del código existente
     }
 
-    // Verificar si el puzzle es válido
-    isValidPuzzle(matrix) {
+    // REEMPLAZA la función isValidPuzzle existente con esta:
+    isValidPuzzle(matrix, gameType = 'classic', extraData = null) {
         const size = matrix.length;
         
-        // Verificar números inválidos
+        // Verificación básica
         for (let i = 0; i < size; i++) {
             for (let j = 0; j < size; j++) {
                 const num = matrix[i][j];
                 if (num < 0 || num > 9) return false;
-            }
-        }
-        
-        // Verificar conflictos en números fijos
-        for (let i = 0; i < size; i++) {
-            for (let j = 0; j < size; j++) {
-                const num = matrix[i][j];
-                if (num !== 0) {
-                    // Verificar fila
-                    for (let k = 0; k < size; k++) {
-                        if (k !== j && matrix[i][k] === num) return false;
-                    }
-                    // Verificar columna
-                    for (let k = 0; k < size; k++) {
-                        if (k !== i && matrix[k][j] === num) return false;
-                    }
-                    // Verificar subcuadrícula
-                    const startRow = Math.floor(i / 3) * 3;
-                    const startCol = Math.floor(j / 3) * 3;
-                    for (let x = startRow; x < startRow + 3; x++) {
-                        for (let y = startCol; y < startCol + 3; y++) {
-                            if (x !== i && y !== j && matrix[x][y] === num) return false;
-                        }
-                    }
+                if (num !== 0 && !this.isValidBasicPlacement(matrix, i, j, num)) {
+                    return false;
                 }
             }
         }
         
-        return true;
+        // Verificación específica del tipo
+        return this.knowledgeBase.validateSolution(matrix, gameType, extraData);
     }
 
-    // Verificar solución perfecta
-    isPerfectSolution(matrix) {
+    // AGREGA esta nueva función:
+    isValidBasicPlacement(matrix, row, col, num) {
         const size = matrix.length;
         
+        // Verificar fila
         for (let i = 0; i < size; i++) {
-            const rowSet = new Set();
-            const colSet = new Set();
-            
-            for (let j = 0; j < size; j++) {
-                // Verificar filas
-                if (matrix[i][j] === 0 || rowSet.has(matrix[i][j])) return false;
-                rowSet.add(matrix[i][j]);
-                
-                // Verificar columnas
-                if (matrix[j][i] === 0 || colSet.has(matrix[j][i])) return false;
-                colSet.add(matrix[j][i]);
-            }
+            if (i !== col && matrix[row][i] === num) return false;
         }
         
-        // Verificar subcuadrículas
-        for (let i = 0; i < size; i += 3) {
-            for (let j = 0; j < size; j += 3) {
-                const subgridSet = new Set();
-                for (let x = i; x < i + 3; x++) {
-                    for (let y = j; y < j + 3; y++) {
-                        if (matrix[x][y] === 0 || subgridSet.has(matrix[x][y])) return false;
-                        subgridSet.add(matrix[x][y]);
-                    }
-                }
+        // Verificar columna
+        for (let i = 0; i < size; i++) {
+            if (i !== row && matrix[i][col] === num) return false;
+        }
+        
+        // Verificar subcuadrícula
+        const subgridSize = Math.sqrt(size);
+        const startRow = Math.floor(row / subgridSize) * subgridSize;
+        const startCol = Math.floor(col / subgridSize) * subgridSize;
+        
+        for (let i = startRow; i < startRow + subgridSize; i++) {
+            for (let j = startCol; j < startCol + subgridSize; j++) {
+                if (i !== row && j !== col && matrix[i][j] === num) return false;
             }
         }
         
         return true;
     }
 
-    // ... (resto del código保持不变) ...
+    // AGREGA esta función para generar puzzles:
+    generatePuzzle(gameType, difficulty) {
+        try {
+            return this.generator.createPuzzle(difficulty);
+        } catch (error) {
+            console.error('Error generating puzzle:', error);
+            // Fallback a puzzle predefinido
+            return this.getPredefinedPuzzle(difficulty);
+        }
+    }
+
+    getPredefinedPuzzle(difficulty) {
+        // Puzzles predefinidos de respaldo
+        const puzzles = {
+            'easy': [
+                [5, 3, 0, 0, 7, 0, 0, 0, 0],
+                [6, 0, 0, 1, 9, 5, 0, 0, 0],
+                [0, 9, 8, 0, 0, 0, 0, 6, 0],
+                [8, 0, 0, 0, 6, 0, 0, 0, 3],
+                [4, 0, 0, 8, 0, 3, 0, 0, 1],
+                [7, 0, 0, 0, 2, 0, 0, 0, 6],
+                [0, 6, 0, 0, 0, 0, 2, 8, 0],
+                [0, 0, 0, 4, 1, 9, 0, 0, 5],
+                [0, 0, 0, 0, 8, 0, 0, 7, 9]
+            ],
+            'medium': [
+                // Agrega puzzle medio aquí
+            ]
+            // Agrega más dificultades
+        };
+        
+        return JSON.parse(JSON.stringify(puzzles[difficulty] || puzzles.easy));
+    }
+
+
+isValidPuzzle(matrix) {
+    const size = matrix.length;
+    
+    // Verificar números inválidos
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            const num = matrix[i][j];
+            if (num < 0 || num > 9) return false;
+            if (num !== 0) {
+                // Verificar conflicto en fila
+                for (let k = 0; k < size; k++) {
+                    if (k !== j && matrix[i][k] === num) return false;
+                }
+                // Verificar conflicto en columna
+                for (let k = 0; k < size; k++) {
+                    if (k !== i && matrix[k][j] === num) return false;
+                }
+                // Verificar conflicto en subcuadrícula 3x3
+                const startRow = Math.floor(i / 3) * 3;
+                const startCol = Math.floor(j / 3) * 3;
+                for (let x = startRow; x < startRow + 3; x++) {
+                    for (let y = startCol; y < startCol + 3; y++) {
+                        if (x !== i && y !== j && matrix[x][y] === num) return false;
+                    }
+                }
+            }
+        }
+    }
+    
+    return true;
+}
+
+isPerfectSolution(matrix) {
+    const size = matrix.length;
+    
+    // Verificar filas y columnas
+    for (let i = 0; i < size; i++) {
+        const rowSet = new Set();
+        const colSet = new Set();
+        
+        for (let j = 0; j < size; j++) {
+            // Verificar filas
+            if (matrix[i][j] === 0 || rowSet.has(matrix[i][j])) return false;
+            rowSet.add(matrix[i][j]);
+            
+            // Verificar columnas
+            if (matrix[j][i] === 0 || colSet.has(matrix[j][i])) return false;
+            colSet.add(matrix[j][i]);
+        }
+    }
+    
+    // Verificar subcuadrículas 3x3
+    for (let i = 0; i < size; i += 3) {
+        for (let j = 0; j < size; j += 3) {
+            const subgridSet = new Set();
+            for (let x = i; x < i + 3; x++) {
+                for (let y = j; y < j + 3; y++) {
+                    if (matrix[x][y] === 0 || subgridSet.has(matrix[x][y])) return false;
+                    subgridSet.add(matrix[x][y]);
+                }
+            }
+        }
+    }
+    
+    return true;
+}
 }
