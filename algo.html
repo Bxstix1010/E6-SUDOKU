@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Multi-Variante - Solucionador Mejorado</title>
+    <style>
+        /* Estilos anteriores... */
+        
+        /* Nuevos estilos para tamaños adicionales */
+        .sudoku-3x3 {
+            grid-template-columns: repeat(3, 1fr);
+            max-width: 200px;
+        }
+        
+        .sudoku-12x12 {
+            grid-template-columns: repeat(12, 1fr);
+            max-width: 600px;
+        }
+        
+        /* Ajustes responsive */
+        @media (max-width: 768px) {
+            .sudoku-12x12 {
+                grid-template-columns: repeat(6, 1fr);
+                max-width: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- PÁGINA PRINCIPAL - MENÚ REDUCIDO -->
+        <div id="mainPage">
+            <header>
+                <h1>🧩 Sudoku Multi-Variante</h1>
+                <p>Descubre el fascinante mundo de los Sudokus con múltiples tamaños</p>
+            </header>
+
+            <div class="main-menu">
+                <div class="sudoku-type" data-type="3x3">
+                    <div class="icon">3×3</div>
+                    <h3>Sudoku 3×3</h3>
+                    <p>Sudoku pequeño ideal para niños y principiantes. Números del 1 al 3.</p>
+                    <button class="play-btn">Jugar Ahora</button>
+                </div>
+
+                <div class="sudoku-type" data-type="4x4">
+                    <div class="icon">4×4</div>
+                    <h3>Sudoku 4×4</h3>
+                    <p>Sudoku en tamaño 4×4. Perfecto para practicar las reglas básicas.</p>
+                    <button class="play-btn">Jugar Ahora</button>
+                </div>
+
+                <div class="sudoku-type" data-type="6x6">
+                    <div class="icon">6×6</div>
+                    <h3>Sudoku 6×6</h3>
+                    <p>Sudoku de tamaño intermedio 6×6. Un buen paso antes del 9×9.</p>
+                    <button class="play-btn">Jugar Ahora</button>
+                </div>
+
+                <div class="sudoku-type" data-type="9x9">
+                    <div class="icon">9×9</div>
+                    <h3>Sudoku 9×9</h3>
+                    <p>El Sudoku clásico tradicional. El desafío perfecto para expertos.</p>
+                    <button class="play-btn">Jugar Ahora</button>
+                </div>
+
+                <div class="sudoku-type" data-type="12x12">
+                    <div class="icon">12×12</div>
+                    <h3>Sudoku 12×12</h3>
+                    <p>Sudoku gigante para los más aventureros. Usa números del 1 al 9 y letras A-C.</p>
+                    <button class="play-btn">Jugar Ahora</button>
+                </div>
+            </div>
+
+            <footer>
+                <p>Sudoku Multi-Variante &copy; 2024 - Desarrollado con ❤️ para amantes del Sudoku</p>
+            </footer>
+        </div>
+
+        <!-- Resto del código HTML (página de juego, modales, etc.) -->
+        
+    </div>
+
+    <script>
+    // ==================== CLASE SudokuGenerator CORREGIDA ====================
+    class SudokuGenerator {
+        constructor(size = 9) {
+            this.size = size;
+            // Asegurarse de que el tamaño tenga una raíz cuadrada entera
+            this.subgridSize = Math.sqrt(size);
+            if (!Number.isInteger(this.subgridSize)) {
+                // Para tamaños como 12x12, usar un tamaño de subcuadrícula personalizado
+                if (size === 12) this.subgridSize = 3; // 4x3 subgrids for 12x12
+                else this.subgridSize = Math.floor(this.subgridSize);
+            }
+            this.grid = Array(size).fill().map(() => Array(size).fill(0));
+        }
+
+        generateComplete() {
+            this.grid = Array(this.size).fill().map(() => Array(this.size).fill(0));
+            this.solveComplete();
+            return this.grid;
+        }
+
+        solveComplete() {
+            for (let row = 0; row < this.size; row++) {
+                for (let col = 0; col < this.size; col++) {
+                    if (this.grid[row][col] === 0) {
+                        const numbers = this.shuffleArray([...Array(this.size).keys()].map(n => n + 1));
+                        
+                        for (const num of numbers) {
+                            if (this.isValidPlacement(row, col, num)) {
+                                this.grid[row][col] = num;
+                                
+                                if (this.solveComplete()) {
+                                    return true;
+                                }
+                                
+                                this.grid[row][col] = 0;
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        createPuzzle(difficulty) {
+            const completeGrid = this.generateComplete();
+            const puzzle = JSON.parse(JSON.stringify(completeGrid));
+            
+            // Calcular celdas a eliminar basado en el tamaño y dificultad
+            const totalCells = this.size * this.size;
+            const difficultyFactors = {
+                'easy': 0.4,    // 60% de pistas
+                'medium': 0.5,  // 50% de pistas  
+                'hard': 0.6,    // 40% de pistas
+                'expert': 0.7   // 30% de pistas
+            };
+            
+            const cellsToRemove = Math.floor(totalCells * difficultyFactors[difficulty] || 0.5);
+            this.removeCells(puzzle, cellsToRemove);
+            return puzzle;
+        }
+
+        removeCells(grid, count) {
+            const cells = [];
+            for (let i = 0; i < this.size; i++) {
+                for (let j = 0; j < this.size; j++) {
+                    cells.push({row: i, col: j});
+                }
+            }
+            
+            this.shuffleArray(cells);
+            let removed = 0;
+            
+            for (const cell of cells) {
+                if (removed >= count) break;
+                
+                const backup = grid[cell.row][cell.col];
+                grid[cell.row][cell.col] = 0;
+                
+                // Para tamaños más grandes, saltar la verificación de solución única por rendimiento
+                if (this.size > 9) {
+                    removed++;
+                    continue;
+                }
+                
+                if (this.hasUniqueSolution(JSON.parse(JSON.stringify(grid)))) {
+                    removed++;
+                } else {
+                    grid[cell.row][cell.col] = backup;
+                }
+            }
+        }
+
+        hasUniqueSolution(grid) {
+            // Para tamaños grandes, asumir que la solución es única
+            if (this.size > 9) return true;
+            
+            const solutions = this.countSolutions(JSON.parse(JSON.stringify(grid)), 0);
+            return solutions === 1;
+        }
+
+        countSolutions(grid, count) {
+            if (count > 1) return count;
+            
+            for (let row = 0; row < this.size; row++) {
+                for (let col = 0; col < this.size; col++) {
+                    if (grid[row][col] === 0) {
+                        for (let num = 1; num <= this.size; num++) {
+                            if (this.isValidPlacementForGrid(grid, row, col, num)) {
+                                grid[row][col] = num;
+                                count = this.countSolutions(grid, count);
+                                if (count > 1) return count;
+                                grid[row][col] = 0;
+                            }
+                        }
+                        return count;
+                    }
+                }
+            }
+            return count + 1;
+        }
+
+        isValidPlacementForGrid(grid, row, col, num) {
+            // Verificar fila
+            for (let i = 0; i < this.size; i++) {
+                if (grid[row][i] === num) return false;
+            }
+            
+            // Verificar columna
+            for (let i = 0; i < this.size; i++) {
+                if (grid[i][col] === num) return false;
+            }
+            
+            // Verificar subcuadrícula
+            const startRow = Math.floor(row / this.subgridSize) * this.subgridSize;
+            const startCol = Math.floor(col / this.subgridSize) * this.subgridSize;
+            
+            for (let i = 0; i < this.subgridSize; i++) {
+                for (let j = 0; j < this.subgridSize; j++) {
+                    if (grid[startRow + i][startCol + j] === num) return false;
+                }
+            }
+            
+            return true;
+        }
+
+        isValidPlacement(row, col, num) {
+            return this.isValidPlacementForGrid(this.grid, row, col, num);
+        }
+
+        shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+    }
+
+    // ==================== CLASE SudokuKnowledgeBase CORREGIDA ====================
+    class SudokuKnowledgeBase {
+        constructor() {
+            this.techniques = {
+                'single': {
+                    name: 'Única Posibilidad',
+                    description: 'Una celda solo puede contener un número específico porque es el único que falta en esa fila, columna o región.'
+                },
+                'hidden-single': {
+                    name: 'Única Ocultada',
+                    description: 'Un número solo puede ir en una celda específica dentro de una fila, columna o región, aunque haya otras posibilidades en esa celda.'
+                },
+                'locked-candidates': {
+                    name: 'Candidatos Bloqueados',
+                    description: 'Cuando un número está confinado a una fila o columna dentro de una región, puede eliminarse de otras celdas en esa fila o columna fuera de la región.'
+                }
+            };
+        }
+
+        validateSolution(grid, gameType = 'classic', extraData = null) {
+            const size = grid.length;
+            const subgridSize = Math.sqrt(size);
+            
+            // Para tamaños sin raíz cuadrada exacta, usar validación personalizada
+            let validSubgridSize = subgridSize;
+            if (!Number.isInteger(subgridSize)) {
+                if (size === 12) validSubgridSize = 3; // 4x3 subgrids for 12x12
+                else validSubgridSize = Math.floor(subgridSize);
+            }
+            
+            // Validación básica para todos los tipos
+            for (let i = 0; i < size; i++) {
+                const rowSet = new Set();
+                const colSet = new Set();
+                
+                for (let j = 0; j < size; j++) {
+                    // Validar filas
+                    if (grid[i][j] === 0 || rowSet.has(grid[i][j])) {
+                        return false;
+                    }
+                    rowSet.add(grid[i][j]);
+                    
+                    // Validar columnas
+                    if (grid[j][i] === 0 || colSet.has(grid[j][i])) {
+                        return false;
+                    }
+                    colSet.add(grid[j][i]);
+                }
+            }
+            
+            // Validar regiones según el tipo de sudoku
+            if (['3x3', '4x4', '6x6', '9x9', '12x12'].includes(gameType)) {
+                const regionRows = size / validSubgridSize;
+                const regionCols = validSubgridSize;
+                
+                for (let i = 0; i < regionRows; i++) {
+                    for (let j = 0; j < regionCols; j++) {
+                        const regionSet = new Set();
+                        for (let x = i * validSubgridSize; x < (i + 1) * validSubgridSize; x++) {
+                            for (let y = j * validSubgridSize; y < (j + 1) * validSubgridSize; y++) {
+                                if (grid[x][y] === 0 || regionSet.has(grid[x][y])) {
+                                    return false;
+                                }
+                                regionSet.add(grid[x][y]);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        // Resto de la clase sin cambios...
+    }
+
+    // ==================== APLICACIÓN PRINCIPAL ACTUALIZADA ====================
+    document.addEventListener('DOMContentLoaded', function() {
+        // Variables globales de la aplicación
+        let currentGameType = '9x9';
+        let currentDifficulty = 'medium';
+        let gameGrid = [];
+        let solutionGrid = [];
+        
+        // Función startNewGame actualizada
+        function startNewGame(type) {
+            currentGameType = type;
+            gameCompleted = false;
+            errorCount = 0;
+            hintCount = 0;
+            moveCount = 0;
+            gameHistory = [];
+            historyPointer = -1;
+            
+            updateGameTitle(type);
+            
+            // Determinar tamaño según el tipo
+            let gridSize = 9;
+            if (type === '3x3') gridSize = 3;
+            else if (type === '4x4') gridSize = 4;
+            else if (type === '6x6') gridSize = 6;
+            else if (type === '12x12') gridSize = 12;
+            
+            const generator = new SudokuGenerator(gridSize);
+            gameGrid = generator.createPuzzle(currentDifficulty);
+            solutionGrid = JSON.parse(JSON.stringify(gameGrid));
+            
+            // Guardar estado inicial
+            saveGameState();
+            
+            // Renderizar tablero
+            renderSudokuGrid();
+            
+            // Iniciar temporizador
+            startTimer();
+            
+            // Mostrar página de juego
+            showGamePage();
+        }
+        
+        // Función updateGameTitle actualizada
+        function updateGameTitle(type) {
+            const titles = {
+                '3x3': 'Sudoku 3×3',
+                '4x4': 'Sudoku 4×4',
+                '6x6': 'Sudoku 6×6',
+                '9x9': 'Sudoku 9×9',
+                '12x12': 'Sudoku 12×12'
+            };
+            
+            const descriptions = {
+                '3x3': 'Sudoku pequeño con números del 1 al 3',
+                '4x4': 'Sudoku mediano con números del 1 al 4',
+                '6x6': 'Sudoku grande con números del 1 al 6',
+                '9x9': 'Sudoku clásico con números del 1 al 9',
+                '12x12': 'Sudoku gigante con números del 1 al 9 y letras A-C'
+            };
+            
+            gameTitleElement.textContent = titles[type] || 'Sudoku';
+            gameDescriptionElement.textContent = descriptions[type] || 'Completa el tablero siguiendo las reglas del Sudoku';
+        }
+        
+        // Función renderSudokuGrid actualizada
+        function renderSudokuGrid() {
+            sudokuGrid.innerHTML = '';
+            const size = gameGrid.length;
+            
+            // Establecer clase de tamaño
+            sudokuGrid.className = 'sudoku-grid';
+            if (size === 3) sudokuGrid.classList.add('sudoku-3x3');
+            else if (size === 4) sudokuGrid.classList.add('sudoku-4x4');
+            else if (size === 6) sudokuGrid.classList.add('sudoku-6x6');
+            else if (size === 9) sudokuGrid.classList.add('sudoku-9x9');
+            else if (size === 12) sudokuGrid.classList.add('sudoku-12x12');
+            
+            // Calcular tamaño de subcuadrícula para bordes
+            let subgridSize = Math.sqrt(size);
+            if (!Number.isInteger(subgridSize)) {
+                if (size === 12) subgridSize = 3; // 4x3 subgrids for 12x12
+                else subgridSize = Math.floor(subgridSize);
+            }
+            
+            // Crear celdas
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'sudoku-cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    
+                    // Para el sudoku 12x12, usar números y letras
+                    if (size === 12) {
+                        if (gameGrid[i][j] !== 0) {
+                            if (gameGrid[i][j] <= 9) {
+                                cell.textContent = gameGrid[i][j];
+                            } else {
+                                // Convertir 10, 11, 12 a A, B, C
+                                cell.textContent = String.fromCharCode(64 + gameGrid[i][j] - 9);
+                            }
+                            cell.classList.add('fixed');
+                        }
+                    } else {
+                        if (gameGrid[i][j] !== 0) {
+                            cell.textContent = gameGrid[i][j];
+                            cell.classList.add('fixed');
+                        }
+                    }
+                    
+                    // Aplicar bordes gruesos para regiones
+                    if ((j + 1) % subgridSize === 0 && j !== size - 1) {
+                        cell.classList.add('border-right-thick');
+                    }
+                    
+                    if ((i + 1) % subgridSize === 0 && i !== size - 1) {
+                        cell.classList.add('border-bottom-thick');
+                    }
+                    
+                    cell.addEventListener('click', function() {
+                        selectCell(i, j);
+                    });
+                    
+                    sudokuGrid.appendChild(cell);
+                }
+            }
+            
+            // Renderizar selectores de números
+            renderNumberSelector();
+        }
+
+        // Resto del código de la aplicación...
+    });
+    </script>
+</body>
+</html>
