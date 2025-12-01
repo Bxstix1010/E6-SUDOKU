@@ -248,7 +248,7 @@
 </div>
 
 <script>
-/* ===== Tema ===== */
+/* ===== Tema ===== */   
 const root=document.body, temaSel=document.getElementById('temaSel');
 function setTema(m){root.setAttribute('data-theme',m==='Oscuro'?'dark':'light');localStorage.setItem('temaSudoku',m)}
 temaSel.value=localStorage.getItem('temaSudoku')||'Claro';setTema(temaSel.value);
@@ -258,7 +258,7 @@ temaSel.addEventListener('change',e=>setTema(e.target.value));
 const vistaMenu=document.getElementById('vistaMenu');
 const vistaJuego=document.getElementById('vistaJuego');
 const tableroDiv=document.getElementById('tablero');
-
+/* ===== Restricciones ===== */
 let tamano=9, subR=3, subC=3, dificultad='media';
 const TITULOS={4:['Mini 4×4','Subcuadros 2×2.'],
                6:['Sudoku 6×6','Subcuadros 2×3.'],
@@ -279,8 +279,8 @@ document.querySelectorAll('.btn[data-jugar]').forEach(b=>{
   });
 });
 document.getElementById('volverMenu').addEventListener('click',()=>{vistaJuego.style.display='none';vistaMenu.style.display='block'});
-
-/* Dificultad marcada */
+/* Gestión de Estado y Monitorización (UI) */
+/* Dificultad marcada*/
 let difBtns=[...document.querySelectorAll('.dif')];
 function setDifActive(key){dificultad=key;difBtns.forEach(b=>b.classList.toggle('active', b.getAttribute('data-dif')===key))}
 difBtns.forEach(b=>b.addEventListener('click',()=>setDifActive(b.getAttribute('data-dif'))));
@@ -296,12 +296,14 @@ document.getElementById('btnMonitor').addEventListener('click',()=>{modalGA.clas
 document.getElementById('cerrarGA').addEventListener('click',()=>modalGA.classList.remove('visible'));
 modalGA.addEventListener('click',e=>{ if(e.target===modalGA) modalGA.classList.remove('visible'); });
 
+/* ===== Funciones Utilitarias (El "Kit de Herramientas" del AG) ===== */
+
 /* ===== Utilidades ===== */
 const rango=n=>[...Array(n).keys()];
 const copiar=m=>m.map(f=>f.slice());
 const aleatorio=(min,max)=>Math.floor(Math.random()*(max-min+1))+min;
 
-/* ===== Reglas ===== */
+/* ===== Reglas -- Lógica de Validación===== */
 function validoEn(m,f,c,v){
   for(let i=0;i<tamano;i++){ if(m[f][i]===v||m[i][c]===v) return false; }
   const r0=Math.floor(f/subR)*subR, c0=Math.floor(c/subC)*subC;
