@@ -258,6 +258,10 @@ temaSel.addEventListener('change',e=>setTema(e.target.value));
 const vistaMenu=document.getElementById('vistaMenu');
 const vistaJuego=document.getElementById('vistaJuego');
 const tableroDiv=document.getElementById('tablero');
+
+
+
+
 /* ===== Restricciones ===== */
 let tamano=9, subR=3, subC=3, dificultad='media';
 const TITULOS={4:['Mini 4×4','Subcuadros 2×2.'],
@@ -279,7 +283,10 @@ document.querySelectorAll('.btn[data-jugar]').forEach(b=>{
   });
 });
 document.getElementById('volverMenu').addEventListener('click',()=>{vistaJuego.style.display='none';vistaMenu.style.display='block'});
-/* Gestión de Estado y Monitorización (UI) */
+
+
+
+/* Gestión de Estado y Monitorización (UI) DIFICULTAD*/
 /* Dificultad marcada*/
 let difBtns=[...document.querySelectorAll('.dif')];
 function setDifActive(key){dificultad=key;difBtns.forEach(b=>b.classList.toggle('active', b.getAttribute('data-dif')===key))}
@@ -296,12 +303,18 @@ document.getElementById('btnMonitor').addEventListener('click',()=>{modalGA.clas
 document.getElementById('cerrarGA').addEventListener('click',()=>modalGA.classList.remove('visible'));
 modalGA.addEventListener('click',e=>{ if(e.target===modalGA) modalGA.classList.remove('visible'); });
 
-/* ===== Funciones Utilitarias (El "Kit de Herramientas" del AG) ===== */
+
+
+
+/* ===== Funciones Utilitarias (Iterar entre filas y columnas, copia profunda del tablero) ===== */
 
 /* ===== Utilidades ===== */
 const rango=n=>[...Array(n).keys()];
 const copiar=m=>m.map(f=>f.slice());
 const aleatorio=(min,max)=>Math.floor(Math.random()*(max-min+1))+min;
+
+
+
 
 /* ===== Reglas -- Lógica de Validación===== */
 function validoEn(m,f,c,v){
@@ -310,7 +323,6 @@ function validoEn(m,f,c,v){
   for(let r=r0;r<r0+subR;r++) for(let k=c0;k<c0+subC;k++){ if(m[r][k]===v) return false; }
   return true;
 }
-
 /* ===== GA – utilidades ===== */
 function crearIndividuo(){
   // filas = permutaciones (1..N barajado) -> garantiza filas válidas
@@ -319,6 +331,11 @@ function crearIndividuo(){
     for(let i=tamano-1;i>0;i--){const j=aleatorio(0,i); [base[f][i],base[f][j]]=[base[f][j],base[f][i]]}
   return base;
 }
+
+
+
+/* ===== calcula el número de errores en el tablero===== */
+
 function conflictos(m){
   let conf=0;
   // columnas
@@ -337,16 +354,23 @@ function conflictos(m){
   }
   return conf;
 }
+
+
 function mutar(ind,pm){
   for(let f=0;f<tamano;f++)
     if(Math.random()<pm){const a=aleatorio(0,tamano-1),b=aleatorio(0,tamano-1);[ind[f][a],ind[f][b]]=[ind[f][b],ind[f][a]]}
 }
+
+
+/* ===== Cruzamiento: mezcla filas de ambos padres ===== */
+
 function cruzar(p,m){
   // cruce por fila: mantiene filas como permutaciones
   const h=rango(tamano).map(()=>Array(tamano).fill(0));
   for(let f=0;f<tamano;f++){const up=Math.random()<0.5;for(let c=0;c<tamano;c++)h[f][c]=up?p[f][c]:m[f][c]}
   return h;
 }
+
 
 /* Reparación: swaps en la misma fila para corregir duplicados de columna sin romper subcuadros */
 function repararColumnas(ind){
@@ -381,8 +405,10 @@ function repararColumnas(ind){
     }
   }
 }
-
+/* =====selecciona a los padres que se reproducirán===== */
 function torneo(evals){const pick=()=>evals[aleatorio(0,evals.length-1)];return [pick(),pick(),pick()].sort((a,b)=>a.fit-b.fit)[0]}
+
+
 function parametrosGA(N){
   if(N<=6) return {tamP:140,pm:0.10,elit:10,maxGen:800};
   if(N<=9) return {tamP:240,pm:0.12,elit:12,maxGen:1400};
@@ -396,7 +422,7 @@ function evolucionarGA(opts){
   let pob=rango(tamP).map(()=>crearIndividuo());
   let mejor=null,mejorFit=Infinity;const elite=Math.max(1,Math.floor(elit/100*tamP));
   for(let gen=0;gen<maxGen;gen++){
-    const evals=pob.map(ind=>({ind,fit:conflictos(ind)})).sort((a,b)=>a.fit-b.fit);
+    const evals=pob.map(ind=>({ind,fit:conflictos(ind)})).sort((a,b)=>a.fit-b.fit);j 
     if(evals[0].fit<mejorFit){mejorFit=evals[0].fit;mejor=copiar(evals[0].ind)}
     onTick&&onTick({gen,best:evals[0].fit});
     if(evals[0].fit===0) return {sol:copiar(evals[0].ind),gens:gen+1,fit:0};
